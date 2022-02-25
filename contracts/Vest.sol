@@ -159,7 +159,7 @@ contract Vest {
    * @dev Calculates the amount that has already vested but hasn't been released yet.
    * @param token ERC20 token which is being vested
    */
-  function releasableAmount() public constant returns (uint256) {
+  function releaseableAmount() public constant returns (uint256) {
     return vestedAmount(tokenToDistribute).sub(releasedTokens);
   }
 
@@ -180,6 +180,7 @@ contract Vest {
         }
     }
 
+}
 
 
 
