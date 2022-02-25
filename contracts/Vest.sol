@@ -106,8 +106,8 @@ contract Vest {
         require(success);
 
         active = true;
-        start = now;
-        cliffPeriod = start.add(cliffPeriod);
+        start = block.timestamp;
+        cliffPeriod = start + cliffPeriod;
     }
 
     // call this function to stop vesting tokens for a given vesting contract
@@ -118,7 +118,7 @@ contract Vest {
         require(revocable);
 
         uint256 balance = IERC20(tokenToDistribute).balanceOf(address(this));
-        uint256 unreleased = releaseableAmount(tokenToDistribute);
+        uint256 unreleased = releaseableAmount();
         uint256 refund = balance - unreleased;
 
         bool success = IERC20(tokenToDistribute).transfer(owner, refund);
@@ -135,7 +135,7 @@ contract Vest {
             "no more tokens available to vest"
         );
 
-        uint256 unreleased = releaseableAmount(tokenToDistribute);
+        uint256 unreleased = releaseableAmount();
 
         require(unreleased > 0);
         
