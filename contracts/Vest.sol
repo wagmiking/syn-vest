@@ -27,8 +27,6 @@ contract Vest {
     //total number of tokens to emit to the beneficiary over the entire vest duration
     uint256 public numTokensToDistribute;
 
-    //TODO: do you want Vest frequency? (i.e. pay out per day / week / month rather than seconds)
-
     //block timestamp of when the contract is deployed
     uint256 public start;
 
@@ -43,7 +41,6 @@ contract Vest {
 
     //a mapping to keep track of how many tokens have already  been released to a given address
     mapping (address => uint256) public released;
-
 
     //this event is emitted when tokens are vested
     event Released(uint256 amount, address beneficiary);
@@ -97,23 +94,29 @@ contract Vest {
         _;
     }
 
-    // call this function to begin a vest - vesting contracts are inactive until they have tokens to release
+  
+    /**
+   * @dev call this function to begin a vest - vesting contracts are inactive until they have tokens to release
+   * @param amount of initial tokenToDistribute that you want to seed the vest contract with
+   */
     function depositInitialTokens(uint256 _amount) public onlyOwner {
         bool success = IERC20(tokenToDistribute).transfer(
             address(this),
             _amount
         );
         require(success);
-
         active = true;
         start = block.timestamp;
         cliffPeriod = start + cliffPeriod;
     }
 
-    // call this function to stop vesting tokens for a given vesting contract
-    // only callable by the contract owner (i.e. the SYN multisig who delegate-called the factory)
-    // emits a TokenVestingRevoked event identifying  which contract was revoked
-    //TODO: This currently  pays out to the owner. You may want to pay out to the beneficiary.
+ 
+    //TODO: revoke() currently  pays out to the owner. You may want to pay out to the beneficiary.
+    /**
+   * @dev call this function to stop vesting tokens for a given vesting contract
+   * only callable by the contract owner (i.e. the SYN multisig who delegate-called the factory)
+   * emits a TokenVestingRevoked event identifying  which contract was revoked
+   */
     function revoke() public onlyOwner {
         require(revocable);
 
@@ -126,7 +129,7 @@ contract Vest {
         emit TokenVestingRevoked(address(this));
     }
 
-     /**
+    /**
    * @notice Transfers vested tokens to beneficiary.
    */
     function releaseToken() public onlyOwner onlyActive {
