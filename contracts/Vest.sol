@@ -159,7 +159,7 @@ contract Vest {
    * @dev Calculates the amount that has already vested but hasn't been released yet.
    */
   function releaseableAmount() public returns (uint256) {
-    return vestedAmount(tokenToDistribute) - releasedTokens;
+    return vestedAmount() - releasedTokens;
   }
 
 
