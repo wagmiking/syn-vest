@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
@@ -15,19 +15,13 @@ contract Vest {
     //address who's receiving the vested tokens
     address public beneficiary;
 
-<<<<<<< HEAD
-    uint256 public tokenAmount; // total token amounts in 10**18 decimals
-    uint256 public timePeriodToVest; // duration in unix time seconds
-    uint256 public cliffPeriod; // time in unix time seconds
-=======
     // this is the address of the ERC-20 token you'd like to distribute to the beneficiary of the vesting contract
     address public tokenToDistribute;
 
     //this is the length of the vesting contract in seconds (i.e. 1 month is 2419200 seconds)
->>>>>>> 0aa2c1f (Initial commit)
     uint256 public vestDuration;
 
-    //period beneficiary must wait until vesting begins
+    //period beneficiary must wait until vesting begins, default cliffPeriod is 0
     uint256 public cliffPeriod; // time in unix time seconds
 
     //total number of tokens to emit to the beneficiary over the entire vest duration
@@ -38,7 +32,7 @@ contract Vest {
     //block timestamp of when the contract is deployed
     uint256 public start;
 
-    //number of tokens that have been vested thus far
+    //number of tokens that have been released thus far
     uint256 public releasedTokens;
 
     // whether the vesting contract is cancellable after it has been deployed or not
@@ -67,12 +61,7 @@ contract Vest {
     constructor(
         address _owner,
         address _beneficiary,
-<<<<<<< HEAD
-        uint256 _tokenAmount,
-        uint256 _timePeriodToVest,
-=======
         address _tokenToDistribute,
->>>>>>> 0aa2c1f (Initial commit)
         uint256 _vestDuration,
         uint256 _cliffPeriod,
         uint256 _numTokensToDistribute,
@@ -80,8 +69,6 @@ contract Vest {
     ) {
         owner = _owner;
         beneficiary = _beneficiary;
-        tokenAmount = _tokenAmount;
-        timePeriodToVest = _timePeriodToVest;
         vestDuration = _vestDuration;
         cliffPeriod = _cliffPeriod;
         require(_beneficiary != address(0), "Call cannot come from 0 address.");
@@ -101,18 +88,6 @@ contract Vest {
         _;
     }
 
-<<<<<<< HEAD
-    function releaseToken(address _token) public onlyOwner {
-        require(IERC20(_token).balanceOf(this) > 0, "no more tokens available");
-        
-        uint256 amountToRelease = releaseableAmount(_token);
-        releasedTokens += amountToRelease; // change state before transfer to prevent reentrancy
-
-        (bool success, ) = IERC20(_token).safeTransfer(beneficiary, amountToRelease);
-        require(success);
-
-        Released(amountToRelease);
-=======
     //this modifier checks if a vesting contract  has been seeded with an initial token deposit
     modifier onlyActive() {
         require(
@@ -131,116 +106,81 @@ contract Vest {
         require(success);
 
         active = true;
-        start = block.timestamp;
+        start = now;
         cliffPeriod = start.add(cliffPeriod);
->>>>>>> 0aa2c1f (Initial commit)
     }
 
     // call this function to stop vesting tokens for a given vesting contract
     // only callable by the contract owner (i.e. the SYN multisig who delegate-called the factory)
     // emits a TokenVestingRevoked event identifying  which contract was revoked
+    //TODO: This currently  pays out to the owner. You may want to pay out to the beneficiary.
     function revoke() public onlyOwner {
         require(revocable);
 
-<<<<<<< HEAD
-        uint256 balance = IERC20(_token).balanceOf(this);
-        uint256 unreleased = releaseableAmount(_token);
-        uint256 refund = balance - unreleased;
-
-        (bool success, ) = IERC20(_token).safeTransfer(owner, refund);
-=======
         uint256 balance = IERC20(tokenToDistribute).balanceOf(address(this));
         uint256 unreleased = releaseableAmount(tokenToDistribute);
         uint256 refund = balance - unreleased;
 
         bool success = IERC20(tokenToDistribute).transfer(owner, refund);
->>>>>>> 0aa2c1f (Initial commit)
         require(success);
         emit TokenVestingRevoked(address(this));
     }
 
-    //TODO: still fixing functionality  of releaseToken
-
+     /**
+   * @notice Transfers vested tokens to beneficiary.
+   */
     function releaseToken() public onlyOwner onlyActive {
         require(
             IERC20(tokenToDistribute).balanceOf(address(this)) > 0,
             "no more tokens available to vest"
         );
 
-        uint256 amountToRelease = releaseableAmount(tokenToDistribute);
-        releasedTokens += amountToRelease; // change state before transfer to prevent reentrancy
+        uint256 unreleased = releaseableAmount(tokenToDistribute);
+
+        require(unreleased > 0);
+        
+        releasedTokens += unreleased;
 
         bool success = IERC20(tokenToDistribute).transfer(
             beneficiary,
-            amountToRelease
+            unreleased
         );
         require(success);
 
-        emit Released(amountToRelease, beneficiary);
+        emit Released(unreleased, beneficiary);
     }
-
-
-    function vestedAmount(ERC20Basic token) public returns (uint256) {
-        uint256 currentBalance = tokenToDistribute.balanceOf(this);
-        uint256 totalBalance = currentBalance.add(released[token]);
-
-        if (now < cliff) {
-        return 0;
-        } else if (now >= start.add(duration) || revoked[token]) {
-        return totalBalance;
-        } else {
-        return totalBalance.mul(now.sub(start)).div(duration);
-        }
-    }
-
-
-
-
-
 
 
     ///////////////
     /// Helpers ///
     ///////////////
 
-<<<<<<< HEAD
-    function releaseableAmount(address _token) public returns (uint256) {
-        return vestedAmount(_token) - releasedTokens;
-=======
-    //returns the amount of tokens that are still up for vesting
-    function vestableAmount(address _token) public view returns (uint256) {
-        return tokensToDistribute - vestedAmount(_token);
-    }
+    /**
+   * @dev Calculates the amount that has already vested but hasn't been released yet.
+   * @param token ERC20 token which is being vested
+   */
+  function releasableAmount() public constant returns (uint256) {
+    return vestedAmount(tokenToDistribute).sub(releasedTokens);
+  }
+
 
     /**
-     * @dev Calculates the amount that has already vested but hasn't been released yet.
-     * @param _token ERC20 token which is being vested
-     */
-    function releasableAmount(address _token) public view returns (uint256) {
-        return vestedAmount(_token).sub(_released[address(token)]);
->>>>>>> 0aa2c1f (Initial commit)
-    }
+   * @dev Calculates the amount that has already vested for the beneficiary.
+   */
+    function vestedAmount() public returns (uint256) {
+        uint256 currentBalance = tokenToDistribute.balanceOf(this);
+        uint256 totalBalance = currentBalance.add(releasedTokens);
 
-    function vestedAmount(address _token) public returns (uint256) {
-        uint256 currentBalance = IERC20(_token).balanceOf(this);
-        uint256 totalBalance = currentBalance + releasedTokens;
-
-        // can't vest anything if it is before the cliff
-        if (block.timestamp < cliffPeriod) {
-<<<<<<< HEAD
-            return 0; // can't vest anything if it is before the cliff
-        } else if (block.timestamp >= start + vestDuration ) { // if it is fully past the vesting period and nothing has been vested yet, then vest it all
-            return totalBalance;
-        } else {
-            return totalBalance * ((block.timestamp - start) / vestDuration); // otherwise, vest it linearlly
-=======
-            return 0;
-        }
-        //vest linearly
+        if (now < cliffPeriod) {
+        return 0;
+        } 
+        
         else {
-            return
-                totalBalance.mul(block.timestamp.sub(start)).div(vestDuration);
->>>>>>> 0aa2c1f (Initial commit)
+        return totalBalance.mul(now.sub(start)).div(vestDuration);
         }
     }
-}
+
+
+
+
+
