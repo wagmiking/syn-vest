@@ -1,18 +1,14 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.9;
 
 import "./Vest.sol";
 
 contract VestFactory {
     address private owner;
-<<<<<<< HEAD
-    Vest[] public vestingContracts;
-=======
 
     // One beneficiary can have multiple vesting contracts
     // keep track via a mapping of beneficiary -> all vesting contracts in `vestingContracts`
     mapping(address => Vest[]) public vestingContracts;
->>>>>>> 0aa2c1f (Initial commit)
 
     constructor() {
         owner = msg.sender;
@@ -27,12 +23,7 @@ contract VestFactory {
     function createVestingContract(
         address _owner,
         address _beneficiary,
-<<<<<<< HEAD
-        uint256 _tokenAmount,
-        uint256 _timePeriodToVest,
-=======
         address _tokenToDistribute,
->>>>>>> 0aa2c1f (Initial commit)
         uint256 _vestDuration,
         uint256 _cliffPeriod,
         uint256 _numTokensToDistribute,
@@ -41,17 +32,12 @@ contract VestFactory {
         Vest vestingContract = new Vest(
             _owner,
             _beneficiary,
-<<<<<<< HEAD
-            _tokenAmount,
-            _timePeriodToVest,
-=======
             _tokenToDistribute,
->>>>>>> 0aa2c1f (Initial commit)
             _vestDuration,
             _cliffPeriod,
             _numTokensToDistribute,
             _revocable
         );
-        vestingContracts.push(vestingContract);
+        vestingContracts[_beneficiary].push(vestingContract);
     }
 }

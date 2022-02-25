@@ -167,7 +167,7 @@ contract Vest {
    * @dev Calculates the amount that has already vested for the beneficiary.
    */
     function vestedAmount() public returns (uint256) {
-        uint256 currentBalance = tokenToDistribute.balanceOf(this);
+        uint256 currentBalance = IERC20(tokenToDistribute).balanceOf(address(this));
         uint256 totalBalance = currentBalance + releasedTokens;
 
         if (block.timestamp < cliffPeriod) {
