@@ -77,7 +77,7 @@ contract Vest {
             cliffPeriod < vestDuration,
             "Cliff period must not be longer than vesting contract duration."
         );
-        require(duration > 0, "TokenVesting: duration is <= 0");
+        require(vestDuration > 0, "TokenVesting: duration is <= 0");
         numTokensToDistribute = _numTokensToDistribute;
         tokenToDistribute = _tokenToDistribute;
         revocable = _revocable;
@@ -157,10 +157,9 @@ contract Vest {
 
     /**
    * @dev Calculates the amount that has already vested but hasn't been released yet.
-   * @param token ERC20 token which is being vested
    */
-  function releaseableAmount() public constant returns (uint256) {
-    return vestedAmount(tokenToDistribute).sub(releasedTokens);
+  function releaseableAmount() public returns (uint256) {
+    return vestedAmount(tokenToDistribute) - releasedTokens;
   }
 
 
@@ -169,14 +168,14 @@ contract Vest {
    */
     function vestedAmount() public returns (uint256) {
         uint256 currentBalance = tokenToDistribute.balanceOf(this);
-        uint256 totalBalance = currentBalance.add(releasedTokens);
+        uint256 totalBalance = currentBalance + releasedTokens;
 
-        if (now < cliffPeriod) {
+        if (block.timestamp < cliffPeriod) {
         return 0;
         } 
         
         else {
-        return totalBalance.mul(now.sub(start)).div(vestDuration);
+        return (totalBalance * (block.timestamp - start)) / (vestDuration);
         }
     }
 
